@@ -1,0 +1,476 @@
+<Window x:Class="SSISimulator.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:SSISimulator.ViewModels"
+        xmlns:conv="clr-namespace:SSISimulator.Converters"
+        Title="SSI Simulator – TFM UM Control Terminal"
+        Height="680" Width="860"
+        ResizeMode="CanResizeWithGrip"
+        Background="#FF1E1E2E">
+
+    <Window.DataContext>
+        <vm:MainViewModel />
+    </Window.DataContext>
+
+    <Window.Resources>
+        <!-- ── Value converters ─────────────────────────────────────── -->
+        <conv:ByteHexConverter x:Key="ByteHexConverter"/>
+
+        <!-- ── Colour palette ───────────────────────────────────────── -->
+        <SolidColorBrush x:Key="AccentBrush"        Color="#FF89B4FA"/>
+        <SolidColorBrush x:Key="SurfaceBrush"       Color="#FF313244"/>
+        <SolidColorBrush x:Key="ForegroundBrush"    Color="#FFCDD6F4"/>
+        <SolidColorBrush x:Key="MutedBrush"         Color="#FF6C7086"/>
+        <SolidColorBrush x:Key="GreenBrush"         Color="#FFA6E3A1"/>
+        <SolidColorBrush x:Key="RedBrush"           Color="#FFF38BA8"/>
+        <SolidColorBrush x:Key="YellowBrush"        Color="#FFF9E2AF"/>
+        <SolidColorBrush x:Key="ActiveToggleBrush"  Color="#FFA6E3A1"/>
+        <SolidColorBrush x:Key="InactiveBrush"      Color="#FF45475A"/>
+
+        <!-- ── Section header style ─────────────────────────────────── -->
+        <Style x:Key="SectionHeader" TargetType="TextBlock">
+            <Setter Property="FontSize"       Value="11"/>
+            <Setter Property="FontWeight"     Value="Bold"/>
+            <Setter Property="Foreground"     Value="{StaticResource AccentBrush}"/>
+            <Setter Property="Margin"         Value="0,0,0,6"/>
+        </Style>
+
+        <!-- ── Label style ──────────────────────────────────────────── -->
+        <Style x:Key="FieldLabel" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource MutedBrush}"/>
+            <Setter Property="FontSize"   Value="11"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <!-- ── ComboBox style ───────────────────────────────────────── -->
+        <Style TargetType="ComboBox">
+            <Setter Property="Background"   Value="{StaticResource SurfaceBrush}"/>
+            <Setter Property="Foreground"   Value="{StaticResource ForegroundBrush}"/>
+            <Setter Property="BorderBrush"  Value="{StaticResource MutedBrush}"/>
+            <Setter Property="Height"       Value="28"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <!-- ── Button base style ────────────────────────────────────── -->
+        <Style x:Key="BaseButton" TargetType="Button">
+            <Setter Property="Height"       Value="28"/>
+            <Setter Property="Padding"      Value="12,0"/>
+            <Setter Property="FontSize"     Value="12"/>
+            <Setter Property="FontWeight"   Value="SemiBold"/>
+            <Setter Property="Cursor"       Value="Hand"/>
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+
+        <Style x:Key="ConnectButton" TargetType="Button" BasedOn="{StaticResource BaseButton}">
+            <Setter Property="Background" Value="#FF89B4FA"/>
+            <Setter Property="Foreground" Value="#FF1E1E2E"/>
+            <Style.Triggers>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Opacity" Value="0.4"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="DisconnectButton" TargetType="Button" BasedOn="{StaticResource BaseButton}">
+            <Setter Property="Background" Value="{StaticResource RedBrush}"/>
+            <Setter Property="Foreground" Value="#FF1E1E2E"/>
+            <Style.Triggers>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Opacity" Value="0.4"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- ── ToggleButton style for D0–D7 ─────────────────────────── -->
+        <Style x:Key="ControlToggle" TargetType="ToggleButton">
+            <Setter Property="Width"          Value="64"/>
+            <Setter Property="Height"         Value="48"/>
+            <Setter Property="Background"     Value="{StaticResource InactiveBrush}"/>
+            <Setter Property="Foreground"     Value="{StaticResource ForegroundBrush}"/>
+            <Setter Property="FontWeight"     Value="Bold"/>
+            <Setter Property="FontSize"       Value="13"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor"         Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="6"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                BorderBrush="{TemplateBinding BorderBrush}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter Property="Background" Value="{StaticResource ActiveToggleBrush}"/>
+                                <Setter Property="Foreground" Value="#FF1E1E2E"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Opacity" Value="0.85"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>  <!-- Serial port settings -->
+            <RowDefinition Height="Auto"/>  <!-- Control + Status panels -->
+            <RowDefinition Height="*"/>     <!-- Log -->
+            <RowDefinition Height="Auto"/>  <!-- Status bar -->
+        </Grid.RowDefinitions>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             ROW 0 – Serial Port Settings
+        ═══════════════════════════════════════════════════════════════ -->
+        <Border Grid.Row="0"
+                Background="{StaticResource SurfaceBrush}"
+                CornerRadius="8" Padding="12,10" Margin="0,0,0,12">
+            <StackPanel>
+                <TextBlock Text="SERIAL PORT CONFIGURATION"
+                           Style="{StaticResource SectionHeader}"/>
+                <UniformGrid Rows="1" Columns="6" VerticalAlignment="Center">
+
+                    <!-- COM Port -->
+                    <StackPanel Margin="0,0,10,0">
+                        <TextBlock Text="Port" Style="{StaticResource FieldLabel}" Margin="0,0,0,3"/>
+                        <ComboBox ItemsSource="{Binding ComPorts}"
+                                  SelectedItem="{Binding SelectedComPort}"
+                                  IsEnabled="{Binding IsDisconnected}"
+                                  MinWidth="90"/>
+                    </StackPanel>
+
+                    <!-- Baud rate -->
+                    <StackPanel Margin="0,0,10,0">
+                        <TextBlock Text="Baud Rate" Style="{StaticResource FieldLabel}" Margin="0,0,0,3"/>
+                        <ComboBox ItemsSource="{Binding BaudRates}"
+                                  SelectedItem="{Binding SelectedBaudRate}"
+                                  IsEnabled="{Binding IsDisconnected}"
+                                  MinWidth="90"/>
+                    </StackPanel>
+
+                    <!-- TFM UM Address -->
+                    <StackPanel Margin="0,0,10,0">
+                        <TextBlock Text="TFM UM Addr (hex)" Style="{StaticResource FieldLabel}" Margin="0,0,0,3"/>
+                        <TextBox Height="28" Padding="6,0"
+                                 VerticalContentAlignment="Center"
+                                 Background="{StaticResource SurfaceBrush}"
+                                 Foreground="{StaticResource ForegroundBrush}"
+                                 BorderBrush="{StaticResource MutedBrush}"
+                                 IsEnabled="{Binding IsDisconnected}"
+                                 Text="{Binding TfmUmAddress,
+                                        Converter={StaticResource ByteHexConverter},
+                                        UpdateSourceTrigger=LostFocus}"
+                                 MinWidth="80"/>
+                    </StackPanel>
+
+                    <!-- Spacer -->
+                    <StackPanel/>
+
+                    <!-- Connect button -->
+                    <Button Content="CONNECT"
+                            Style="{StaticResource ConnectButton}"
+                            Command="{Binding ConnectCommand}"
+                            Margin="0,18,8,0"/>
+
+                    <!-- Disconnect button -->
+                    <Button Content="DISCONNECT"
+                            Style="{StaticResource DisconnectButton}"
+                            Command="{Binding DisconnectCommand}"
+                            Margin="0,18,0,0"/>
+
+                </UniformGrid>
+            </StackPanel>
+        </Border>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             ROW 1 – Control Commands (D0–D7) and Status Indicators
+        ═══════════════════════════════════════════════════════════════ -->
+        <Grid Grid.Row="1" Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="16"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- ── Control output panel ──────────────────────────── -->
+            <Border Grid.Column="0"
+                    Background="{StaticResource SurfaceBrush}"
+                    CornerRadius="8" Padding="12,10">
+                <StackPanel>
+                    <TextBlock Text="CONTROL OUTPUT  (TX → Field)"
+                               Style="{StaticResource SectionHeader}"/>
+                    <UniformGrid Rows="2" Columns="4" HorizontalAlignment="Left">
+                        <ToggleButton Style="{StaticResource ControlToggle}"
+                                      Content="D0" Margin="3"
+                                      IsChecked="{Binding D0, Mode=TwoWay}"/>
+                        <ToggleButton Style="{StaticResource ControlToggle}"
+                                      Content="D1" Margin="3"
+                                      IsChecked="{Binding D1, Mode=TwoWay}"/>
+                        <ToggleButton Style="{StaticResource ControlToggle}"
+                                      Content="D2" Margin="3"
+                                      IsChecked="{Binding D2, Mode=TwoWay}"/>
+                        <ToggleButton Style="{StaticResource ControlToggle}"
+                                      Content="D3" Margin="3"
+                                      IsChecked="{Binding D3, Mode=TwoWay}"/>
+                        <ToggleButton Style="{StaticResource ControlToggle}"
+                                      Content="D4" Margin="3"
+                                      IsChecked="{Binding D4, Mode=TwoWay}"/>
+                        <ToggleButton Style="{StaticResource ControlToggle}"
+                                      Content="D5" Margin="3"
+                                      IsChecked="{Binding D5, Mode=TwoWay}"/>
+                        <ToggleButton Style="{StaticResource ControlToggle}"
+                                      Content="D6" Margin="3"
+                                      IsChecked="{Binding D6, Mode=TwoWay}"/>
+                        <ToggleButton Style="{StaticResource ControlToggle}"
+                                      Content="D7" Margin="3"
+                                      IsChecked="{Binding D7, Mode=TwoWay}"/>
+                    </UniformGrid>
+                </StackPanel>
+            </Border>
+
+            <!-- ── Status indicator panel ─────────────────────────── -->
+            <Border Grid.Column="2"
+                    Background="{StaticResource SurfaceBrush}"
+                    CornerRadius="8" Padding="12,10">
+                <StackPanel>
+                    <TextBlock Text="FIELD STATUS  (RX ← Field)"
+                               Style="{StaticResource SectionHeader}"/>
+                    <UniformGrid Rows="2" Columns="4">
+                        <!-- Each cell: label + coloured Ellipse -->
+                        <StackPanel HorizontalAlignment="Center" Margin="4">
+                            <TextBlock Text="S0" Style="{StaticResource FieldLabel}"
+                                       HorizontalAlignment="Center"/>
+                            <Ellipse Width="32" Height="32" Margin="4,4,4,0">
+                                <Ellipse.Style>
+                                    <Style TargetType="Ellipse">
+                                        <Setter Property="Fill" Value="{StaticResource InactiveBrush}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding S0}" Value="True">
+                                                <Setter Property="Fill" Value="{StaticResource GreenBrush}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Ellipse.Style>
+                            </Ellipse>
+                        </StackPanel>
+                        <StackPanel HorizontalAlignment="Center" Margin="4">
+                            <TextBlock Text="S1" Style="{StaticResource FieldLabel}"
+                                       HorizontalAlignment="Center"/>
+                            <Ellipse Width="32" Height="32" Margin="4,4,4,0">
+                                <Ellipse.Style>
+                                    <Style TargetType="Ellipse">
+                                        <Setter Property="Fill" Value="{StaticResource InactiveBrush}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding S1}" Value="True">
+                                                <Setter Property="Fill" Value="{StaticResource GreenBrush}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Ellipse.Style>
+                            </Ellipse>
+                        </StackPanel>
+                        <StackPanel HorizontalAlignment="Center" Margin="4">
+                            <TextBlock Text="S2" Style="{StaticResource FieldLabel}"
+                                       HorizontalAlignment="Center"/>
+                            <Ellipse Width="32" Height="32" Margin="4,4,4,0">
+                                <Ellipse.Style>
+                                    <Style TargetType="Ellipse">
+                                        <Setter Property="Fill" Value="{StaticResource InactiveBrush}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding S2}" Value="True">
+                                                <Setter Property="Fill" Value="{StaticResource GreenBrush}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Ellipse.Style>
+                            </Ellipse>
+                        </StackPanel>
+                        <StackPanel HorizontalAlignment="Center" Margin="4">
+                            <TextBlock Text="S3" Style="{StaticResource FieldLabel}"
+                                       HorizontalAlignment="Center"/>
+                            <Ellipse Width="32" Height="32" Margin="4,4,4,0">
+                                <Ellipse.Style>
+                                    <Style TargetType="Ellipse">
+                                        <Setter Property="Fill" Value="{StaticResource InactiveBrush}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding S3}" Value="True">
+                                                <Setter Property="Fill" Value="{StaticResource GreenBrush}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Ellipse.Style>
+                            </Ellipse>
+                        </StackPanel>
+                        <StackPanel HorizontalAlignment="Center" Margin="4">
+                            <TextBlock Text="S4" Style="{StaticResource FieldLabel}"
+                                       HorizontalAlignment="Center"/>
+                            <Ellipse Width="32" Height="32" Margin="4,4,4,0">
+                                <Ellipse.Style>
+                                    <Style TargetType="Ellipse">
+                                        <Setter Property="Fill" Value="{StaticResource InactiveBrush}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding S4}" Value="True">
+                                                <Setter Property="Fill" Value="{StaticResource GreenBrush}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Ellipse.Style>
+                            </Ellipse>
+                        </StackPanel>
+                        <StackPanel HorizontalAlignment="Center" Margin="4">
+                            <TextBlock Text="S5" Style="{StaticResource FieldLabel}"
+                                       HorizontalAlignment="Center"/>
+                            <Ellipse Width="32" Height="32" Margin="4,4,4,0">
+                                <Ellipse.Style>
+                                    <Style TargetType="Ellipse">
+                                        <Setter Property="Fill" Value="{StaticResource InactiveBrush}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding S5}" Value="True">
+                                                <Setter Property="Fill" Value="{StaticResource GreenBrush}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Ellipse.Style>
+                            </Ellipse>
+                        </StackPanel>
+                        <StackPanel HorizontalAlignment="Center" Margin="4">
+                            <TextBlock Text="S6" Style="{StaticResource FieldLabel}"
+                                       HorizontalAlignment="Center"/>
+                            <Ellipse Width="32" Height="32" Margin="4,4,4,0">
+                                <Ellipse.Style>
+                                    <Style TargetType="Ellipse">
+                                        <Setter Property="Fill" Value="{StaticResource InactiveBrush}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding S6}" Value="True">
+                                                <Setter Property="Fill" Value="{StaticResource GreenBrush}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Ellipse.Style>
+                            </Ellipse>
+                        </StackPanel>
+                        <StackPanel HorizontalAlignment="Center" Margin="4">
+                            <TextBlock Text="S7" Style="{StaticResource FieldLabel}"
+                                       HorizontalAlignment="Center"/>
+                            <Ellipse Width="32" Height="32" Margin="4,4,4,0">
+                                <Ellipse.Style>
+                                    <Style TargetType="Ellipse">
+                                        <Setter Property="Fill" Value="{StaticResource InactiveBrush}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding S7}" Value="True">
+                                                <Setter Property="Fill" Value="{StaticResource GreenBrush}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Ellipse.Style>
+                            </Ellipse>
+                        </StackPanel>
+                    </UniformGrid>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             ROW 2 – Communication Log
+        ═══════════════════════════════════════════════════════════════ -->
+        <Border Grid.Row="2"
+                Background="{StaticResource SurfaceBrush}"
+                CornerRadius="8" Padding="12,10">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top"
+                           Text="COMMUNICATION LOG"
+                           Style="{StaticResource SectionHeader}"/>
+                <DataGrid ItemsSource="{Binding LogEntries}"
+                          AutoGenerateColumns="False"
+                          IsReadOnly="True"
+                          CanUserAddRows="False"
+                          GridLinesVisibility="Horizontal"
+                          HorizontalGridLinesBrush="#FF45475A"
+                          Background="Transparent"
+                          RowBackground="Transparent"
+                          AlternatingRowBackground="#1AFFFFFF"
+                          Foreground="{StaticResource ForegroundBrush}"
+                          BorderThickness="0"
+                          FontFamily="Consolas"
+                          FontSize="11"
+                          SelectionMode="Single"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Auto"
+                          x:Name="LogGrid">
+                    <DataGrid.ColumnHeaderStyle>
+                        <Style TargetType="DataGridColumnHeader">
+                            <Setter Property="Background"   Value="#FF45475A"/>
+                            <Setter Property="Foreground"   Value="{StaticResource AccentBrush}"/>
+                            <Setter Property="FontWeight"   Value="Bold"/>
+                            <Setter Property="Padding"      Value="8,4"/>
+                            <Setter Property="BorderThickness" Value="0"/>
+                        </Style>
+                    </DataGrid.ColumnHeaderStyle>
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Timestamp"
+                                            Binding="{Binding Timestamp, StringFormat={}{0:HH:mm:ss.fff}}"
+                                            Width="100"/>
+                        <DataGridTextColumn Header="Dir"
+                                            Binding="{Binding Direction}"
+                                            Width="40">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Direction}" Value="TX">
+                                            <Setter Property="Foreground" Value="{StaticResource YellowBrush}"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Direction}" Value="RX">
+                                            <Setter Property="Foreground" Value="{StaticResource GreenBrush}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+                        <DataGridTextColumn Header="Raw Data (Hex)"
+                                            Binding="{Binding RawHex}"
+                                            Width="*"/>
+                        <DataGridTextColumn Header="Description"
+                                            Binding="{Binding Description}"
+                                            Width="200"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </DockPanel>
+        </Border>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             ROW 3 – Status Bar
+        ═══════════════════════════════════════════════════════════════ -->
+        <Border Grid.Row="3" Margin="0,10,0,0">
+            <DockPanel>
+                <!-- Connection indicator -->
+                <Ellipse Width="10" Height="10" Margin="0,0,6,0" VerticalAlignment="Center">
+                    <Ellipse.Style>
+                        <Style TargetType="Ellipse">
+                            <Setter Property="Fill" Value="{StaticResource RedBrush}"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsConnected}" Value="True">
+                                    <Setter Property="Fill" Value="{StaticResource GreenBrush}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Ellipse.Style>
+                </Ellipse>
+                <TextBlock Text="{Binding StatusMessage}"
+                           Foreground="{StaticResource ForegroundBrush}"
+                           FontSize="11"
+                           VerticalAlignment="Center"/>
+                <TextBlock DockPanel.Dock="Right"
+                           Text="Major Cycle: 850 ms"
+                           Foreground="{StaticResource MutedBrush}"
+                           FontSize="10"
+                           HorizontalAlignment="Right"
+                           VerticalAlignment="Center"/>
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>
