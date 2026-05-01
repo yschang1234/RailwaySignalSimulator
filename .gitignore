@@ -1,6 +1,12 @@
 # Build outputs
 SSISimulator/bin/
 SSISimulator/obj/
+TFMUMSimulator/bin/
+TFMUMSimulator/obj/
+TFMUMSimulator.Core/bin/
+TFMUMSimulator.Core/obj/
+TFMUMSimulator.Tests/bin/
+TFMUMSimulator.Tests/obj/
 
 # Visual Studio
 .vs/
