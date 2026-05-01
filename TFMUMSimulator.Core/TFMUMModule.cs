@@ -149,6 +149,12 @@ namespace TFMUMSimulator.Core
         /// <summary>Fired when any output changes.</summary>
         public event EventHandler? OutputsChanged;
 
+        /// <summary>
+        /// Fired when an I/O error occurs while sending a response telegram.
+        /// Callers can subscribe to log or handle the error; the module continues running.
+        /// </summary>
+        public event EventHandler<Exception>? SendError;
+
         // ── Fail-safe logic ──────────────────────────────────────────────────────
         /// <summary>
         /// Evaluates the Config Board settings for one safety cycle.
@@ -232,9 +238,13 @@ namespace TFMUMSimulator.Core
                 _comm.Send(frame);
                 TelegramSent?.Invoke(this, new TelegramEventArgs(addr, data));
             }
-            catch (Exception)
+            catch (System.IO.IOException ex)
             {
-                // Suppress; caller can subscribe to events for diagnostics
+                SendError?.Invoke(this, ex);
+            }
+            catch (InvalidOperationException ex)
+            {
+                SendError?.Invoke(this, ex);
             }
         }
 

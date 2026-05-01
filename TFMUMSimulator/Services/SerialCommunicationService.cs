@@ -15,6 +15,9 @@ namespace TFMUMSimulator.Services
         /// <inheritdoc/>
         public event EventHandler<byte[]>? DataReceived;
 
+        /// <summary>Fired when a read error occurs on the background receive thread.</summary>
+        public event EventHandler<Exception>? ReceiveError;
+
         /// <inheritdoc/>
         public bool IsOpen => _port?.IsOpen ?? false;
 
@@ -60,9 +63,13 @@ namespace TFMUMSimulator.Services
                 _port.Read(buf, 0, available);
                 DataReceived?.Invoke(this, buf);
             }
-            catch (Exception)
+            catch (System.IO.IOException ex)
             {
-                // Swallow read errors; the ViewModel will log them as needed.
+                ReceiveError?.Invoke(this, ex);
+            }
+            catch (InvalidOperationException ex)
+            {
+                ReceiveError?.Invoke(this, ex);
             }
         }
 

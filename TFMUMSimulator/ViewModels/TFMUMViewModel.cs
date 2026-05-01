@@ -65,6 +65,7 @@ namespace TFMUMSimulator.ViewModels
             };
             _module.TelegramReceived += OnTelegramReceived;
             _module.TelegramSent     += OnTelegramSent;
+            _module.SendError        += (_, ex) => AddLog("--", $"Tx error: {ex.Message}");
 
             RefreshComPorts();
             BaudRates  = new ObservableCollection<string>
@@ -226,6 +227,9 @@ namespace TFMUMSimulator.ViewModels
             if (SelectedComPort is null) return;
             try
             {
+                if (_comm is Services.SerialCommunicationService svc)
+                    svc.ReceiveError += (_, ex) => AddLog("--", $"Rx error: {ex.Message}");
+
                 _comm.Open(SelectedComPort, int.Parse(SelectedBaudRate));
                 IsConnected   = true;
                 StatusMessage = $"Connected – {SelectedComPort} @ {SelectedBaudRate} bps";
