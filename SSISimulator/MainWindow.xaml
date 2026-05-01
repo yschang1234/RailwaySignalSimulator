@@ -1,16 +1,11 @@
 <Window x:Class="SSISimulator.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:vm="clr-namespace:SSISimulator.ViewModels"
         xmlns:conv="clr-namespace:SSISimulator.Converters"
         Title="SSI Simulator – TFM UM Control Terminal"
         Height="680" Width="860"
         ResizeMode="CanResizeWithGrip"
         Background="#FF1E1E2E">
-
-    <Window.DataContext>
-        <vm:MainViewModel />
-    </Window.DataContext>
 
     <Window.Resources>
         <!-- ── Value converters ─────────────────────────────────────── -->

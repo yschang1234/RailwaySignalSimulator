@@ -1,6 +1,8 @@
 using System.Collections.Specialized;
 using System.Windows;
 using System.Windows.Controls;
+using SSISimulator.Services;
+using SSISimulator.ViewModels;
 
 namespace SSISimulator
 {
@@ -9,17 +11,11 @@ namespace SSISimulator
         public MainWindow()
         {
             InitializeComponent();
+            DataContext = new MainViewModel(new SerialCommunicationService());
 
             // Auto-scroll the log DataGrid when new entries are added
-            if (DataContext is ViewModels.MainViewModel vm)
+            if (DataContext is MainViewModel vm)
                 vm.LogEntries.CollectionChanged += LogEntries_CollectionChanged;
-
-            // DataContext is set via XAML; wire up after DataContext is ready too
-            DataContextChanged += (_, _) =>
-            {
-                if (DataContext is ViewModels.MainViewModel viewModel)
-                    viewModel.LogEntries.CollectionChanged += LogEntries_CollectionChanged;
-            };
         }
 
         private void LogEntries_CollectionChanged(object? sender,
