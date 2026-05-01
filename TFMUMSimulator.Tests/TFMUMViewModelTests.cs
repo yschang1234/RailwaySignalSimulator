@@ -392,4 +392,62 @@ namespace TFMUMSimulator.Tests
             Assert.True(eventFired);
         }
     }
+
+    // ── ViewModel-level fail-safe tests ──────────────────────────────────────
+    /// <summary>
+    /// Tests that mirror the TFMUMViewModel fail-safe behaviour using
+    /// <see cref="TFMUMModule"/> with an injected <see cref="FakeSerialComm"/>.
+    /// The ViewModel delegates all fail-safe logic to the module, so exercising
+    /// the module directly is equivalent to exercising the ViewModel.
+    /// </summary>
+    public class TFMUMViewModelTests
+    {
+        /// <summary>
+        /// Verifies that when Normal and Maintenance config values are mismatched
+        /// (not bitwise complements of each other) the fail-safe shutdown logic
+        /// triggers on exactly the 3rd consecutive invalid cycle and forces all
+        /// outputs to zero.
+        /// </summary>
+        [Fact]
+        public void FailSafe_ShouldTrigger_After3CyclesOfMismatch()
+        {
+            // ── Arrange ──────────────────────────────────────────────────────
+            var comm   = new FakeSerialComm();
+            var module = new TFMUMModule(comm)
+            {
+                ModuleAddress          = 0x01,
+                ConfigNormalValue      = 0xAA,
+                ConfigMaintenanceValue = 0xAA  // mismatch: not ~0xAA (0x55)
+            };
+
+            // Drive outputs ON so we can verify they are cleared on shutdown
+            comm.Raise(Telegram.Build(0x01, 0xFF));
+            Assert.True(module.Outputs[0], "Outputs should be active before shutdown");
+
+            // ── Cycle 1: should still be running normally ─────────────────────
+            module.CheckConfigIntegrity();
+            Assert.False(module.IsShutDown, "Must NOT shut down after cycle 1");
+            Assert.Equal(1, module.MismatchCycleCount);
+
+            // ── Cycle 2: still within safe threshold ──────────────────────────
+            module.CheckConfigIntegrity();
+            Assert.False(module.IsShutDown, "Must NOT shut down after cycle 2");
+            Assert.Equal(2, module.MismatchCycleCount);
+
+            // ── Cycle 3: fail-safe shutdown must trigger ──────────────────────
+            module.CheckConfigIntegrity();
+            Assert.True(module.IsShutDown, "MUST shut down after 3 consecutive mismatch cycles");
+
+            // All outputs must be forced to 0 (false) after shutdown
+            for (int i = 0; i < 8; i++)
+                Assert.False(module.Outputs[i], $"Output{i} must be 0 after fail-safe shutdown");
+
+            // Response telegram DATA byte must also be forced to 0x00
+            comm.SentFrames.Clear();
+            comm.Raise(Telegram.Build(0x01, 0xFF));
+            Assert.NotEmpty(comm.SentFrames);
+            byte replyData = comm.SentFrames[^1][2]; // [STX][ADDR][DATA][BCC][ETX]
+            Assert.Equal(0x00, replyData);
+        }
+    }
 }
