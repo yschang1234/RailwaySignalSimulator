@@ -1,6 +1,10 @@
 # Build outputs
 SSISimulator/bin/
 SSISimulator/obj/
+SSISimulator.Core/bin/
+SSISimulator.Core/obj/
+SSISimulator.Tests/bin/
+SSISimulator.Tests/obj/
 TFMUMSimulator/bin/
 TFMUMSimulator/obj/
 TFMUMSimulator.Core/bin/
