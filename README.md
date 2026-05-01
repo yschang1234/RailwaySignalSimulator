@@ -11,7 +11,7 @@ applications backed by independently testable core libraries.
 ```
 RailwaySignalSimulator/
 │
-├── SSISimulator.sln               ← Visual Studio solution (all projects)
+├── RailwaySignalSimulation.sln    ← Visual Studio solution (all projects)
 │
 ├── SSISimulator/                  ← WPF app – SSI Master (controller side)
 │   ├── Commands/RelayCommand.cs
