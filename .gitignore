@@ -7,6 +7,10 @@ TFMUMSimulator.Core/bin/
 TFMUMSimulator.Core/obj/
 TFMUMSimulator.Tests/bin/
 TFMUMSimulator.Tests/obj/
+SignalCore/bin/
+SignalCore/obj/
+SignalCore.Tests/bin/
+SignalCore.Tests/obj/
 
 # Visual Studio
 .vs/
