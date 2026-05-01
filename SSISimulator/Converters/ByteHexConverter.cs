@@ -22,9 +22,16 @@ namespace SSISimulator.Converters
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value is string s && byte.TryParse(s.TrimStart('0', 'x', 'X'),
-                    NumberStyles.HexNumber, CultureInfo.InvariantCulture, out byte result))
-                return result;
+            if (value is string s)
+            {
+                // Strip optional "0x" / "0X" prefix, then parse as hex
+                string hex = s.StartsWith("0x", StringComparison.OrdinalIgnoreCase)
+                    ? s.Substring(2)
+                    : s;
+                if (byte.TryParse(hex, NumberStyles.HexNumber,
+                        CultureInfo.InvariantCulture, out byte result))
+                    return result;
+            }
             return (byte)0x01; // default on parse failure
         }
     }

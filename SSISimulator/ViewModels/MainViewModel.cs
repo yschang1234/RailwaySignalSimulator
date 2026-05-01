@@ -253,7 +253,11 @@ namespace SSISimulator.ViewModels
                 _port.Read(buf, 0, available);
                 lock (_rxBuffer) { _rxBuffer.AddRange(buf); }
             }
-            catch { /* swallow – handled next cycle */ }
+            catch (Exception ex)
+            {
+                // Log the error; the next major-cycle tick will attempt recovery
+                AddLog("--", $"Rx read error: {ex.Message}");
+            }
         }
 
         /// <summary>
