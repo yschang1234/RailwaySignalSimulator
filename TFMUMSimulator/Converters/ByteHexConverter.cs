@@ -25,7 +25,7 @@ namespace TFMUMSimulator.Converters
             if (value is string s)
             {
                 string hex = s.StartsWith("0x", StringComparison.OrdinalIgnoreCase)
-                    ? s.Substring(2) : s;
+                    ? s[2..] : s;
                 if (byte.TryParse(hex, NumberStyles.HexNumber,
                         CultureInfo.InvariantCulture, out byte result))
                     return result;
