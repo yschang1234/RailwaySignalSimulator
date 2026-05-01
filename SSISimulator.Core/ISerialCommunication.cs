@@ -14,6 +14,13 @@ namespace SSISimulator.Core
         /// </summary>
         event EventHandler<byte[]> DataReceived;
 
+        /// <summary>
+        /// Fired when a read error occurs on the receive thread.
+        /// Implementations that do not support background read errors may leave this
+        /// as a no-op event.
+        /// </summary>
+        event EventHandler<Exception> ReceiveError;
+
         /// <summary>Whether the underlying port is currently open.</summary>
         bool IsOpen { get; }
 

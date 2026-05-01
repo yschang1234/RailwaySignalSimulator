@@ -15,6 +15,10 @@ namespace SSISimulator.Tests
     {
         public event EventHandler<byte[]>? DataReceived;
 
+#pragma warning disable CS0067 // required by interface; never raised in this stub
+        public event EventHandler<Exception>? ReceiveError;
+#pragma warning restore CS0067
+
         public bool IsOpen { get; private set; }
 
         public void Open(string portName, int baudRate) => IsOpen = true;
@@ -416,8 +420,9 @@ namespace SSISimulator.Tests
     // ── Throwing stub for SendError tests ────────────────────────────────────
     internal sealed class ThrowingSerialComm : ISerialCommunication
     {
-#pragma warning disable CS0067 // required by interface; never raised in this stub
-        public event EventHandler<byte[]>? DataReceived;
+#pragma warning disable CS0067 // required by interface; never raised in these stubs
+        public event EventHandler<byte[]>?   DataReceived;
+        public event EventHandler<Exception>? ReceiveError;
 #pragma warning restore CS0067
         public bool IsOpen => true;
         public void Open(string portName, int baudRate) { }

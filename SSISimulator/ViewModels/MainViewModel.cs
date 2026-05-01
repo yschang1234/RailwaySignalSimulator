@@ -62,8 +62,7 @@ namespace SSISimulator.ViewModels
             _module.ControlSent      += OnControlSent;
             _module.SendError        += (_, ex) => AddLog("--", $"Tx error: {ex.Message}");
 
-            if (_comm is Services.SerialCommunicationService svc)
-                svc.ReceiveError += (_, ex) => AddLog("--", $"Rx error: {ex.Message}");
+            _comm.ReceiveError += (_, ex) => AddLog("--", $"Rx error: {ex.Message}");
 
             // Populate available COM ports
             RefreshComPorts();

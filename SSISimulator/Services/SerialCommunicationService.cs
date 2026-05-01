@@ -15,7 +15,7 @@ namespace SSISimulator.Services
         /// <inheritdoc/>
         public event EventHandler<byte[]>? DataReceived;
 
-        /// <summary>Fired when a read error occurs on the background receive thread.</summary>
+        /// <inheritdoc/>
         public event EventHandler<Exception>? ReceiveError;
 
         /// <inheritdoc/>
